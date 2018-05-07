@@ -7,6 +7,7 @@ const Todo = require('./models/todo');
 const User = require('./models/user');
 
 const app = express();
+const port = process.env.PORT || 3000;
 
 const checkId = id => ObjectID.isValid(id);
 
@@ -34,8 +35,6 @@ app
       .then(document => res.send(document))
       .catch(error => res.status(400).send(error));
   })
-  .listen(process.env.PORT || 3000, () => {
-    console.log('Running');
-  });
+  .listen(port, () => console.log(`Listening on port: ${port}`));
 
 module.exports = app;
