@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const express = require('express');
 const { ObjectID } = require('mongodb');
 const bodyParser = require('body-parser');
@@ -38,6 +39,22 @@ app
   .delete('/todos/:id', (req, res) => {
     if (!checkId(req.params.id)) return res.status(404).send();
     Todo.findByIdAndRemove(req.params.id)
+      .then(todo => {
+        if (!todo) return res.status(404).send();
+        res.send({ todo });
+      })
+      .catch(error => res.status(400).send(error));
+  })
+  .patch('/todos/:id', (req, res) => {
+    if (!checkId(req.params.id)) return res.status(404).send();
+    const params = _.pick(req.body, ['text', 'isDone']);
+    if (_.isBoolean(params.isDone) && params.isDone) {
+      params.doneAt = new Date().getTime();
+    } else {
+      params.isDone = false;
+      params.doneAt = null;
+    }
+    Todo.findByIdAndUpdate(req.params.id, { $set: params }, { new: true })
       .then(todo => {
         if (!todo) return res.status(404).send();
         res.send({ todo });
