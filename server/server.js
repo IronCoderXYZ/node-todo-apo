@@ -35,6 +35,15 @@ app
       .then(document => res.send(document))
       .catch(error => res.status(400).send(error));
   })
+  .delete('/todos/:id', (req, res) => {
+    if (!checkId(req.params.id)) return res.status(404).send();
+    Todo.findByIdAndRemove(req.params.id)
+      .then(todo => {
+        if (!todo) return res.status(404).send();
+        res.send(todo);
+      })
+      .catch(error => res.status(400).send(error));
+  })
   .listen(port, () => console.log(`Listening on port: ${port}`));
 
 module.exports = app;
