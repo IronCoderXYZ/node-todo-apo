@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('./db/mongoose');
 const Todo = require('./models/todo');
 const User = require('./models/user');
+const authenticateUser = require('./middleware/authenticate');
 
 const app = express();
 const port = process.env.PORT;
@@ -17,6 +18,10 @@ const checkId = id => ObjectID.isValid(id);
 app
   // MIDDLEWARE
   .use(bodyParser.json())
+  // LOGGEDIN USER
+  .get('/users/me', authenticateUser, (req, res) => {
+    res.send(req.user);
+  })
   // CREATE USER
   .post('/users', (req, res) => {
     const user = new User(_.pick(req.body, ['email', 'password']));
