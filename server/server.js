@@ -15,12 +15,24 @@ const port = process.env.PORT;
 const checkId = id => ObjectID.isValid(id);
 
 app
+  // MIDDLEWARE
   .use(bodyParser.json())
+  // CREATE USER
+  .post('/users', (req, res) => {
+    const user = new User(_.pick(req.body, ['email', 'password']));
+    user
+      .save()
+      .then(() => user.generateAuthToken())
+      .then(token => res.header('x-auth', token).send(user))
+      .catch(error => res.status(400).send(error));
+  })
+  // GET TODOS
   .get('/todos', (req, res) => {
     Todo.find()
       .then(todos => res.send({ todos }))
       .catch(error => res.status(400).send(error));
   })
+  // GET TODO
   .get('/todos/:id', (req, res) => {
     if (!checkId(req.params.id)) return res.status(404).send();
     Todo.findById(req.params.id)
@@ -30,6 +42,7 @@ app
       })
       .catch(error => res.status(400).send(error));
   })
+  // CREATE TODO
   .post('/todos', (req, res) => {
     new Todo({
       text: req.body.text
@@ -38,6 +51,7 @@ app
       .then(document => res.send(document))
       .catch(error => res.status(400).send(error));
   })
+  // DELETE TODO
   .delete('/todos/:id', (req, res) => {
     if (!checkId(req.params.id)) return res.status(404).send();
     Todo.findByIdAndRemove(req.params.id)
@@ -47,6 +61,7 @@ app
       })
       .catch(error => res.status(400).send(error));
   })
+  // UPDATE TODO
   .patch('/todos/:id', (req, res) => {
     if (!checkId(req.params.id)) return res.status(404).send();
     const params = _.pick(req.body, ['text', 'isDone']);
@@ -63,6 +78,7 @@ app
       })
       .catch(error => res.status(400).send(error));
   })
+  // LISTEN
   .listen(port, () => console.log(`Listening on port: ${port}`));
 
 module.exports = app;
