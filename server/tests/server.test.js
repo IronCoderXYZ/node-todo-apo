@@ -202,11 +202,13 @@ describe('POST /users', () => {
       })
       .end(error => {
         if (error) return done(error);
-        User.findOne({ email }).then(user => {
-          expect(user).toBeTruthy();
-          expect(user.password).not.toBe(password);
-          done();
-        });
+        User.findOne({ email })
+          .then(user => {
+            expect(user).toBeTruthy();
+            expect(user.password).not.toBe(password);
+            done();
+          })
+          .catch(error => done(error));
       });
   });
 
@@ -230,5 +232,51 @@ describe('POST /users', () => {
       .send({ email, password })
       .expect(400)
       .end(done);
+  });
+});
+
+describe('POST /users/login', () => {
+  it('Should login user and return auth token, expect removed toInclude', done => {
+    const { email, password, _id } = initialUsers[1];
+    supertest(app)
+      .post('/users/login')
+      .send({ email, password })
+      .expect(200)
+      .expect(res => {
+        expect(res.headers['x-auth']).toBeTruthy();
+      })
+      .end((error, res) => {
+        if (error) return done(error);
+        User.findById(_id)
+          .then(user => {
+            // expect(user.tokens[0]).toInclude({
+            //   access: 'auth',
+            //   token: res.headers['x-auth']
+            // });
+            done();
+          })
+          .catch(error => done(error));
+      });
+  });
+
+  it('Should reject login with invalid credentials', done => {
+    const { email, password, _id } = initialUsers[1];
+
+    supertest(app)
+      .post('/users/login')
+      .send({ email, password: `${password} + invalid` })
+      .expect(400)
+      .expect(res => {
+        expect(res.headers['x-auth']).toBeFalsy();
+      })
+      .end((error, res) => {
+        if (error) return done(error);
+        User.findById(_id)
+          .then(user => {
+            expect(user.tokens.length).toBe(0);
+            done();
+          })
+          .catch(error => done(error));
+      });
   });
 });
