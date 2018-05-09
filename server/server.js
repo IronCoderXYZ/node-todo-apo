@@ -5,9 +5,9 @@ const express = require('express');
 const { ObjectID } = require('mongodb');
 const bodyParser = require('body-parser');
 
-const mongoose = require('./db/mongoose');
 const Todo = require('./models/todo');
 const User = require('./models/user');
+const mongoose = require('./db/mongoose');
 const authenticateUser = require('./middleware/authenticate');
 
 const app = express();

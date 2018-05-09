@@ -2,26 +2,18 @@ const expect = require('expect');
 const supertest = require('supertest');
 const { ObjectID } = require('mongodb');
 
-const app = require('./server');
-const Todo = require('./models/todo');
+const app = require('../server');
+const Todo = require('../models/todo');
+const User = require('../models/user');
+const {
+  initialTodos,
+  populateTodos,
+  initialUsers,
+  populateUsers
+} = require('./seed');
 
-const initialTodos = [
-  { _id: new ObjectID(), text: 'First Todo' },
-  {
-    _id: new ObjectID(),
-    text: 'Second Todo',
-    isDone: true,
-    doneAt: 101
-  }
-];
-
-beforeEach(done => {
-  Todo.remove({})
-    .then(() => {
-      return Todo.insertMany(initialTodos);
-    })
-    .then(() => done());
-});
+beforeEach(populateTodos);
+beforeEach(populateUsers);
 
 describe('POST /todos', () => {
   it('Should create a new todo', done => {
@@ -166,6 +158,77 @@ describe('PATCH /todos/:id', () => {
         expect(res.body.todo.doneAt).toBe(null);
         expect(res.body.todo.isDone).toBe(false);
       })
+      .end(done);
+  });
+});
+
+describe('GET /users/me', () => {
+  it('Should return user if authenticated', done => {
+    supertest(app)
+      .get('/users/me')
+      // Set header
+      .set('x-auth', initialUsers[0].tokens[0].token)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.email).toBe(initialUsers[0].email);
+        expect(res.body._id).toBe(initialUsers[0]._id.toString());
+      })
+      .end(done);
+  });
+
+  it('Should return 401 if not authenticated', done => {
+    supertest(app)
+      .get('/users/me')
+      .set('x-auth', 'This is an invalid token')
+      .expect(401)
+      .expect(res => expect(res.body).toEqual({}))
+      .end(done);
+  });
+});
+
+describe('POST /users', () => {
+  it('Should create a user when valid info is supplied', done => {
+    const email = 'unique.email@provider.com';
+    const password = 'aNewUniquePasswordForUser';
+
+    supertest(app)
+      .post('/users')
+      .send({ email, password })
+      .expect(200)
+      .expect(res => {
+        expect(res.body._id).toBeTruthy();
+        expect(res.body.email).toBe(email);
+        expect(res.headers['x-auth']).toBeTruthy();
+      })
+      .end(error => {
+        if (error) return done(error);
+        User.findOne({ email }).then(user => {
+          expect(user).toBeTruthy();
+          expect(user.password).not.toBe(password);
+          done();
+        });
+      });
+  });
+
+  it('Should return validation errors if user info is invalid', done => {
+    const email = 'invalid.email'; // Invalid email
+    const password = '123'; // Too short (req length of 4)
+
+    supertest(app)
+      .post('/users')
+      .send({ email, password })
+      .expect(400)
+      .end(done);
+  });
+
+  it('Should not create user if email is in use', done => {
+    const email = initialUsers[0].email; // Already in use through seeding
+    const password = 'validPassword';
+
+    supertest(app)
+      .post('/users')
+      .send({ email, password })
+      .expect(400)
       .end(done);
   });
 });
