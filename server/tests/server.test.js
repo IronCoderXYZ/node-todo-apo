@@ -280,3 +280,22 @@ describe('POST /users/login', () => {
       });
   });
 });
+
+describe('DELETE /users/me/token', () => {
+  it('Should remove a token on logout if valid data is provided', done => {
+    const token = initialUsers[0].tokens[0].token;
+    supertest(app)
+      .delete('/users/me/token')
+      .set('x-auth', token)
+      .expect(200)
+      .end((error, res) => {
+        if (error) return done(error);
+        User.findById(initialUsers[0]._id)
+          .then(user => {
+            expect(user.tokens.length).toBe(0);
+            done();
+          })
+          .catch(error => done(error));
+      });
+  });
+});

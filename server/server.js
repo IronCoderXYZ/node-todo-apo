@@ -17,7 +17,15 @@ const checkId = id => ObjectID.isValid(id);
 
 app
   // MIDDLEWARE
-  .use(bodyParser.json())
+  .use(bodyParser.json());
+// LOGOUT USER
+app
+  .delete('/users/me/token', authenticateUser, (req, res) => {
+    req.user
+      .removeToken(req.token)
+      .then(() => res.status(200).send())
+      .catch(() => res.status(400).send());
+  })
   // LOGIN USER
   .post('/users/login', (req, res) => {
     const params = _.pick(req.body, ['email', 'password']);
