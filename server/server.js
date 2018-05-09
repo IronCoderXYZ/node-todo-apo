@@ -18,7 +18,19 @@ const checkId = id => ObjectID.isValid(id);
 app
   // MIDDLEWARE
   .use(bodyParser.json())
-  // LOGGEDIN USER
+  // LOGIN USER
+  .post('/users/login', (req, res) => {
+    const params = _.pick(req.body, ['email', 'password']);
+
+    User.findByCredentials(params.email, params.password)
+      .then(user => {
+        return user.generateAuthToken().then(token => {
+          res.header('x-auth', token).send(user);
+        });
+      })
+      .catch(error => res.status(400).send());
+  })
+  // GET LOGGEDIN USER
   .get('/users/me', authenticateUser, (req, res) => {
     res.send(req.user);
   })
